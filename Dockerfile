@@ -4,5 +4,5 @@ LABEL MAINTAINER florayunshen@gmail.com
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 
-COPY . /usr/src/app
-CMD ["python3", "-u", "./main.py"]
+COPY . /
+CMD ["python3", "-u", "main.py"]
