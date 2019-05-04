@@ -1,4 +1,4 @@
-FROM python:3-onbuild
+FROM python:3
 LABEL MAINTAINER florayunshen@gmail.com
 
 RUN mkdir -p /usr/src/app
