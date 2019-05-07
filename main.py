@@ -2,30 +2,64 @@ import sys
 import time
 import random
 import json
-import urllib2
+import urllib
+import os
 import pandas as pd 
+import requests
+import telnetlib
 from bs4 import BeautifulSoup
 
-reload(sys)
-sys.setdefaultencoding("utf-8")
 
+
+os.getcwd()
+
+start = time.time()
 
 #Some User Agents
-hds=[{'User-Agent':'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6'},\
-    {'User-Agent':'Mozilla/5.0 (Windows NT 6.2) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.12 Safari/535.11'},\
-    {'User-Agent':'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; Trident/6.0)'},\
-    {'User-Agent':'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:34.0) Gecko/20100101 Firefox/34.0'},\
-    {'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/44.0.2403.89 Chrome/44.0.2403.89 Safari/537.36'},\
-    {'User-Agent':'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; en-us) AppleWebKit/534.50 (KHTML, like Gecko) Version/5.1 Safari/534.50'},\
-    {'User-Agent':'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-us) AppleWebKit/534.50 (KHTML, like Gecko) Version/5.1 Safari/534.50'},\
-    {'User-Agent':'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0'},\
-    {'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:2.0.1) Gecko/20100101 Firefox/4.0.1'},\
-    {'User-Agent':'Mozilla/5.0 (Windows NT 6.1; rv:2.0.1) Gecko/20100101 Firefox/4.0.1'},\
-    {'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_0) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11'},\
-    {'User-Agent':'Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; en) Presto/2.8.131 Version/11.11'},\
-    {'User-Agent':'Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11'}]
+my_headers = [
+    "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:30.0) Gecko/20100101 Firefox/30.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/537.75.14",
+    "Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; Win64; x64; Trident/6.0)",
+    'Mozilla/5.0 (Windows; U; Windows NT 5.1; it; rv:1.8.1.11) Gecko/20071127 Firefox/2.0.0.11',
+    'Opera/9.25 (Windows NT 5.1; U; en)',
+    'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322; .NET CLR 2.0.50727)',
+    'Mozilla/5.0 (compatible; Konqueror/3.5; Linux) KHTML/3.5.5 (like Gecko) (Kubuntu)',
+    'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.0.12) Gecko/20070731 Ubuntu/dapper-security Firefox/1.5.0.12',
+    'Lynx/2.8.5rel.1 libwww-FM/2.14 SSL-MM/1.4.1 GNUTLS/1.2.9',
+    "Mozilla/5.0 (X11; Linux i686) AppleWebKit/535.7 (KHTML, like Gecko) Ubuntu/11.04 Chromium/16.0.912.77 Chrome/16.0.912.77 Safari/535.7",
+    "Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:10.0) Gecko/20100101 Firefox/10.0 "
+]
 
-csv_file = pd.DataFrame(columns=["Sold_date","Price","Street","City","State","Beds","Baths","Sq.Ft.","Href"])
+#print("Build IP pool")
+proxies = ["116.211.143.11:80",\
+    "183.1.86.235:8118",\
+    "183.32.88.244:808",\
+    "121.40.42.35:9999",\
+    "222.94.148.210:808",\
+    "218.86.128.100:8118",\
+    "121.31.154.12:8123",\
+    "121.122.42.35:39249",
+    '183.95.80.102:8080',
+    '123.160.31.71:8080',
+    '115.231.128.79:8080',
+    '166.111.77.32:80',
+    '43.240.138.31:8080',
+    '218.201.98.196:3128',
+    "144.217.86.131:3128",
+    '197.254.4.130:43656']
+
+for i in proxies:
+    info = i.split(":")
+    try:
+        telnetlib.open(info[0],info[1],timeout=5)
+    except:
+        proxies.remove(i)
+print(proxies)
+    
+
+page_file = pd.DataFrame(columns=["Sold_date","Price","Street","City","State","Beds","Baths","Sq.Ft.","Href"])
 get_info = []
 state_list = [[35801,35816],[99501,99524],[85001,85055],[72201,72217],[94203,94209],\
     [90001,90089],[90209,90213],[80201,80239],[6101,6112],[19901,19905],[20001,20020],\
@@ -74,45 +108,90 @@ def getInfo(soup,csv_file):
         csv_file = csv_file.append(new_row,ignore_index = True)
     return csv_file
 
+
+print("Web scraper start!")
+num = 0
 for p in state_list:
     for zip_code in range(p[0],p[1]+1):
         new_zip = str(zip_code)
         while len(new_zip)< 5:
             new_zip = "0"+new_zip
-        print(new_zip)
+        print("current zipcode:"+new_zip)
         page_url = "https://www.redfin.com/zipcode/"+new_zip+"/filter/include=sold-3mo"
+        num = num + 1
+
+        if num%10==0:
+            print(page_file.head(n=100))
+        if num==200:
+            num = 0
+            time.sleep(600+random.randint(0,600))
 
         try:
-            response = urllib2.Request(page_url,headers=hds[random.randint(0,len(hds)-1)])
-            source_code = urllib2.urlopen(response).read()
-            plain_text = source_code.decode("utf-8")
-        except (urllib2.HTTPError, urllib2.URLError) as e:
+            p = random.choice(proxies)
+            proxy = {"http":p}
+            hd = random.choice(my_headers)
+            my_header = {'User-Agent':hd}
+            response = requests.get(page_url,headers=my_header,proxies=proxy)
+            #source_code = urllib.request.urlopen(response).read()
+            #plain_text = source_code.decode("utf-8")
+            response.encoding = 'utf-8'
+            plain_text = response.text
+            response.raise_for_status()
+        except (requests.exceptions.HTTPError) as e:
             print(e)
-            continue
+            end = time.time()
+            print(str((end-start)/3600)+" hours, "+p+" got IP blocked")
+            proxies.remove(p)
+            if len(proxies) == 0:
+                print("All IPs got blocked!")
+                break
+            else:
+                continue
         
 
         soup = BeautifulSoup(plain_text,features='html.parser')
         next_page = soup.findAll('a',{'class':"clickable goToPage"})
-        page_file = getInfo(soup,csv_file)
+        page_file = getInfo(soup,page_file)
+        print(page_file)
 
         for i in next_page:
             link = i.get('href')
             url = "https://www.redfin.com" + link
-            time.sleep(20+random.randint(0,10))
+            time.sleep(60+random.randint(0,120))
 
             try:
-                new_response = urllib2.Request(url,headers=hds[random.randint(0,len(hds)-1)])
-                new_code = urllib2.urlopen(new_response).read()
-                new_plain_text = new_code.decode("utf-8")
-            except (urllib2.HTTPError, urllib2.URLError) as e:
+                p = random.choice(proxies)
+                proxy = {"http":"http://"+p}
+                hd = random.choice(my_headers)
+                my_header = {'User-Agent':hd}
+                new_response = requests.get(url,headers=my_header,proxies=proxy)
+                #new_code = urllib.request.urlopen(new_response).read()
+                #new_plain_text = new_code.decode("utf-8")
+                response.encoding = 'utf-8'
+                new_plain_text = response.text
+                new_response.raise_for_status()
+            except (requests.exceptions.HTTPError) as e:
                 print(e)
-                continue
+                end = time.time()
+                print(str((end-start)/3600)+" hours, "+p+" got IP blocked")
+                proxies.remove(p)
+                if len(proxies) == 0:
+                    print("All IPs got blocked!")
+                    break
+                else:
+                    continue
             
             new_soup = BeautifulSoup(new_plain_text,features='html.parser')
             page_file = getInfo(new_soup,page_file)
+            print(page_file)
         
-        time.sleep(20+random.randint(0,5))
-    time.sleep(60)
+    if len(proxies) == 0:
+        break
+
+        
+        
+        time.sleep(30+random.randint(0,60))
+    time.sleep(180+random.randint(0,180))
 
 print(page_file.head(n=100))
-page_file.to_csv("/home/LoftyCode/InternResults/result.csv",index=False)
+page_file.to_csv("result.csv",index=False)
